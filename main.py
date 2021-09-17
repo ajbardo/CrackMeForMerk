@@ -45,33 +45,6 @@ def MERKgenTimeFlag():
     aux3 = (val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - val6 - 3) ^ 2
     return to_return,
 
-def MERKsimulateResults():
-    now = datetime.now()
-    dt_string = now.strftime("%d/%m/%Y/%H/%M/%S").split("/")
-    # val1 = int(dt_string[2])
-    val1 = 21
-    val2 = int(dt_string[1])
-    val3 = int(dt_string[0])
-    val4 = int(dt_string[3])
-    val5 = int(dt_string[4])
-    val6 = int(dt_string[5])
-
-    # lvl 1 de dificultad
-    # result = math.sqrt((val1-val2)^2+(val3-val4)^2+(val5-val6)^2)
-    results = {}
-
-    for val2 in range(0, 12):
-        for val3 in range(0, 31):
-            for val4 in range(0, 24):
-                for val5 in range(0, 60):
-                    for val6 in range(0, 60):
-                        f = open("tmp", "a")
-                        timetab = str(val1) + "/" + str(val2) + "/" + str(val3) + "/" + str(val4) + "/" + str(
-                            val5) + "/" + str(val6)
-                        f.write(
-                            "," + str(timetab) + ":" + str((val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - val6) ^ 2))
-                        f.close()
-
 def forMERKGetPrivateValue():
     global private_time
     global private_value
