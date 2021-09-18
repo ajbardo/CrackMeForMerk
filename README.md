@@ -1,26 +1,46 @@
-1.0 - Objective
+Index
+
+1 - Objective
+2 - requirements and characteristics:
+	2.1 - Requirements
+	2.2 - Execution characteristics
+	2.3 - Environment
+3 - Connection characteristics
+4 - Protocol phases
+	4.1 - Protocol characteristics:
+		4.1.2 - Characteristics of the execution windows
+	4.2 - Phases
+		4.2.0 -  Phase 01
+		4.2.2 -  Phase 02
+		4.2.3 - Phase 03
+	4.3 - Protocol flow diagram
+
+
+
+
+1 - Objective
 Create a insecure transmission at application level for training university newcomers into the ciber-security area.
 
 Its recommended to not read the python code if you want to really break the communication playing like an external element
 
-2.1 - requirements and characteristics:
-2.1.1 - Requirements
+2 - requirements and characteristics:
+2.1 - Requirements
 R01 - The protocol simulates a secure private key exchange and remote execution of commands in the objective
 R02 - The protocol is split in phases with independent connections between them
 R03 - The client and server have a pre-shared value the is represented as  “CommonValue” 
 R04 - The client and the server generates random privates values with timelife and they refresh that values when the lifetime ends
 
-2.1.2 - Execution characteristics
+2.2 - Execution characteristics
 There are two ways to execute the .py file:
 1)Without arguments, the program will create only a server in the default port 4450
 2)With the ip and port argument, the program will create a server in the specified port and tries to communicate with the specified address at the same port (Can be used with local-host to connect with itself)
 
 
-2.1.3 - Environment
+2.3 - Environment
 Executed with Python 3.8
 Executed in windows environments
 
-3.0 - Connection characteristics
+3 - Connection characteristics
 C01 - For each Client to Server connection, we have a data send from the client with the request and a response from the server with the data related to the request.
 C02 - After each server to client response each connection close.
 C03 - Each message between the client and the server is authenticated by a TimeFlag.
@@ -29,7 +49,32 @@ C03 - Each message between the client and the server is authenticated by a TimeF
 
 
 
-4.0 - Protocol phases ( In each phase the client opens a new connection with the server and in the end of the phase the connection is closed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4.0 - Protocol phases
+In each phase the client opens a new connection with the server and in the end of the phase the connection is closed
 
 4.1 - Protocol characteristics:
 4.1C01- There is always an identification header for each phase
@@ -46,7 +91,7 @@ C03 - Each message between the client and the server is authenticated by a TimeF
 
 4.2 - Phases
 
-4.2.1 -  Phase 01
+4.2.0 -  Phase 01
 -Schematic-
 C->S	DH_1/TimeFlag
 S->C	DH_1:int(CommonValue + ServerPrivateValue)/TimeFlag
@@ -72,3 +117,4 @@ S->C 	PVT_1:int(ClientPrivateValue+CharDecValFromAscii1,ClientPrivateValue+CharD
 -Comment-
 C->S;Petition from the client: Identifier "PVT_1:" and the sum of the AscII value of each letter of our command add to the Executiontoken
 S->C;Response of the server:  Identifier "PVT_1:" and the sum of the AscII value of each letter of the result add to the ClientPrivateValue
+

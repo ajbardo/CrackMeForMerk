@@ -47,7 +47,7 @@ def forMERKGetPrivateValue():
     time_data = datetime.now().strftime("%M/%S").split("/")
     new_server_time = (int(time_data[0]) * 100) + int(time_data[1])
     if new_server_time > private_time:
-        private_time = new_server_time + random.randrange(0, 10)
+        private_time = new_server_time + random.randrange(2, 5)
         private_value = random.randrange(0, 999999999)
     return private_value
 
