@@ -6,7 +6,6 @@
 	* 2.2 Execution characteristics
 	* 2.3 Environment
 3. Connection characteristics
-* Spoiler Alert
 4. Protocol phases
 	* 4.1 Protocol characteristics:
 	* 4.2 Phases
@@ -41,9 +40,6 @@ Executed in windows environments
 C01 For each Client to Server connection, we have a data send from the client with the request and a response from the server with the data related to the request.
 C02 After each server to client response each connection close.
 C03 Each message between the client and the server is authenticated by a TimeFlag.
-
-## ----------------------Spoiler Alert Below(Protocol characteristics)----------------------
-
 
 # 4 Protocol phases
 In each phase the client opens a new connection with the server and in the end of the phase the connection is closed
