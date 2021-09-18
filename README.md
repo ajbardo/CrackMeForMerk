@@ -60,28 +60,28 @@ In each phase the client opens a new connection with the server and in the end o
 ## 4.2 Phases
 
 ### 4.2.0  Phase 01
--Schematic-
+#### -Schematic-
 C->S	DH_1/TimeFlag
 S->C	DH_1:int(CommonValue + ServerPrivateValue)/TimeFlag
--Comment-
+#### -Comment-
 C->S;Petition from the client: Identifier "DH_1/"
 S->C;Response from the server: Identifier "DH_1:" and common value pre-shared between them added to the private int value of the server
 
 
 ### 4.2.2  Phase 02
--Schematic-
+#### -Schematic-
 C->S 	DH_2:int(ServerPrivateValue + ClientPrivateValue)/TimeFlag
 S->C	DH_2:int(ClientPrivateValue+TimeToNexToken,ClientPrivateValue+Executiontoken)
--Comment-
+#### -Comment-
 C->S;Petition from the client: Identifier "DH_2:" and the sum of the private server value and the client private value
 S->C;Response of the server: Identifier "DH_2:" and the sums separated by “,” of :
 1)ClientPrivateValue and TimeToNexToken
 2)ClientPrivateValue and Executiontoken
 
 ### 4.2.3 Phase 03
--Schematic-
+#### -Schematic-
 C->S	PVT_1:int(Executiontoken+CharDecValFromAscii1,Executiontoken+CharDecValFromAscii2,...)/TimeFlag
 S->C 	PVT_1:int(ClientPrivateValue+CharDecValFromAscii1,ClientPrivateValue+CharDecValFromAscii2,...)/TimeFlag
--Comment-
+#### -Comment-
 C->S;Petition from the client: Identifier "PVT_1:" and the sum of the AscII value of each letter of our command add to the Executiontoken
 S->C;Response of the server:  Identifier "PVT_1:" and the sum of the AscII value of each letter of the result add to the ClientPrivateValue
