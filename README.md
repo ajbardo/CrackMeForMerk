@@ -21,14 +21,14 @@ Its recommended to not read the python code if you want to really break the comm
 
 # 2 requirements and characteristics:
 ## 2.1 Requirements
-R01 The protocol simulates a secure private key exchange and remote execution of commands in the objective
-R02 The protocol is split in phases with independent connections between them
-R03 The client and server have a pre-shared value the is represented as  “CommonValue” 
-R04 The client and the server generates random privates values with timelife and they refresh that values when the lifetime ends
+R01 The protocol simulates a secure private key exchange and remote execution of commands in the objective                                          
+R02 The protocol is split in phases with independent connections between them                                                                     
+R03 The client and server have a pre-shared value the is represented as  “CommonValue”                                                                      
+R04 The client and the server generates random privates values with timelife and they refresh that values when the lifetime ends                           
 
 ## 2.2 Execution characteristics
-There are two ways to execute the .py file:
-1)Without arguments, the program will create only a server in the default port 4450
+There are two ways to execute the .py file:                                                                                                                    
+1)Without arguments, the program will create only a server in the default port 4450                                                                          
 2)With the ip and port argument, the program will create a server in the specified port and tries to communicate with the specified address at the same port (Can be used with local-host to connect with itself)
 
 
