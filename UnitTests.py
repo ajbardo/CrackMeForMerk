@@ -1,6 +1,4 @@
-import time
-import unittest
-import main
+import time,socket,unittest,main
 from datetime import datetime
 
 class TestCase_1(unittest.TestCase):
@@ -62,6 +60,28 @@ class TestCase_1(unittest.TestCase):
         new_private_value = main.forMERKGetPrivateValue()
         self.assertNotEqual(old_private_value,new_private_value)
 
+    def test_MERKgetCommandValue(self):
+        sentinel = 0
+        command_list = [[101, 99, 104, 111, 32, 104, 111, 108, 97],#echo hola
+                        [101, 99, 104, 111, 32, 106, 101, 106, 101],#echo jeje
+                        [101, 99, 104, 111, 32, 97, 100, 105, 111, 115]]#echo adios
+        for token in range(0,10):
+            command_data = main.MERKgetCommandValue(token)
+            for command in command_list:
+                for pos in range(0,len(command_data)):
+                    if command[pos]+token == command_data[pos]:
+                        sentinel = 1
+                    else:
+                        sentinel = 0
+                        break
+        self.assertEqual(sentinel,1)
+
+    def test_MERKcifResultValue(self):
+        data = "this is a random string:)"
+        for token in range(0,10):
+            cif_value = main.MERKcifResultValue(data, token)
+            result_value = main.MERKgetResultValue(cif_value.split(","),token)
+            self.assertEqual(data,result_value)
 
 if __name__ == '__main__':
     unittest.main()

@@ -74,7 +74,6 @@ def MERKgetResultValue(string, token):
     to_return = ""
     for letter in string:
         to_return += chr(int(letter) - token)
-    print(to_return)
     return to_return
 
 
@@ -105,7 +104,6 @@ def forMerkStateMachineClient(data):
             to_send += "/" + str(MERKgenTimeFlag()[0])
             forMerkSendData(to_send, obj, int(port))
         if "PVT_1" in data:
-            print(1)
             MERKgetResultValue(result.split("PVT_1:")[1].split("/")[0])
 
 
@@ -143,7 +141,6 @@ def forMerkStateMachineServer(data):
 
 
 def forMerk(argv):
-    print(argv)
     max_count = 1000
     if len(argv) > 0:
         obj = argv[0]
@@ -154,7 +151,6 @@ def forMerk(argv):
         count = 0
         while count < max_count:
             count += 1
-            print("count->", count)
             p2 = Process(target=forMerkStateMachineClient, args=("start" + obj + ":" + str(port) + ":" + str(port),))
             p2.start()
             time.sleep(random.randrange(30, 60))
@@ -193,20 +189,6 @@ def forMerkServerMaybe(port):
                 conn.close()
             except:
                 pass
-
-
-def forMerkServerMaybeSlave(conn, addr, port):
-    old_len = -1
-    data = ""
-    while len(data) > old_len:
-        data = conn.recv(1024)
-        old_len = len(data)
-    data = forMerkStateMachineServer(data.decode())
-    conn.send(bytes(data, 'utf-8'))
-    print("Sending S->C :" + str(data) + " to " + str(addr) + ":" + str(port))
-    time.sleep(0.002)
-    conn.close()
-
 
 if __name__ == '__main__':
     forMerk(sys.argv[1:])
