@@ -1,5 +1,6 @@
 import time,socket,unittest,main
 from datetime import datetime
+from multiprocessing import Process,Manager
 
 class TestCase_1(unittest.TestCase):
     def test_MERKFlagTokenAndTimeSlot_newtoken(self):
@@ -47,7 +48,7 @@ class TestCase_1(unittest.TestCase):
             new_now = datetime.now()
             if old_now != new_now:
                 tested = 1
-                self.assertNotEquals(tf1, tf2)
+                self.assertNotEqual(tf1, tf2)
 
     def test_forMERKGetPrivateValue(self):
         old_private_value = main.forMERKGetPrivateValue()
@@ -61,20 +62,12 @@ class TestCase_1(unittest.TestCase):
         self.assertNotEqual(old_private_value,new_private_value)
 
     def test_MERKgetCommandValue(self):
-        sentinel = 0
-        command_list = [[101, 99, 104, 111, 32, 104, 111, 108, 97],#echo hola
-                        [101, 99, 104, 111, 32, 106, 101, 106, 101],#echo jeje
-                        [101, 99, 104, 111, 32, 97, 100, 105, 111, 115]]#echo adios
+        expected = [101, 99, 104, 111, 32, 106, 101, 106, 101]
         for token in range(0,10):
-            command_data = main.MERKgetCommandValue(token)
-            for command in command_list:
-                for pos in range(0,len(command_data)):
-                    if command[pos]+token == command_data[pos]:
-                        sentinel = 1
-                    else:
-                        sentinel = 0
-                        break
-        self.assertEqual(sentinel,1)
+            command_data = main.MERKgetCommandValue("echo jeje",token)
+            for pos in range(0,len(command_data)):
+                self.assertEqual(expected[pos]+token, command_data[pos])
+
 
     def test_MERKcifResultValue(self):
         data = "this is a random string:)"
@@ -82,6 +75,15 @@ class TestCase_1(unittest.TestCase):
             cif_value = main.MERKcifResultValue(data, token)
             result_value = main.MERKgetResultValue(cif_value.split(","),token)
             self.assertEqual(data,result_value)
+
+    def test_forMerkStateMachineClient_DH1(self):
+        result = main.forMerkStateMachineClient("DH_1:"+str(main.common_value+4444))
+        self.assertEqual(result,"DH_2:"+str(main.private_value+4444))
+
+    def test_forMerkStateMachineClient_DH2(self):
+        result = main.forMerkStateMachineClient("DH_2:" + str(1+main.private_value)+","+str(2222+main.private_value)).split("/")[0]
+        self.assertEqual(result, "PVT_1:2323,2321,2326,2333,2254,2328,2323,2328,2323")
+
 
 if __name__ == '__main__':
     unittest.main()

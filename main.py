@@ -3,7 +3,7 @@ import time
 from multiprocessing import Process
 from datetime import datetime
 
-private_value, private_time = 0, 0
+private_value, private_time, token = 0, 0, 0
 common_value = 175824344
 old_token, new_token, old_token_caducity, new_token_caducity = 0, 0, 0, 0
 exec_window = [0, 0]
@@ -52,12 +52,10 @@ def forMERKGetPrivateValue():
     return private_value
 
 
-def MERKgetCommandValue(token):
-    commands = ["echo hola", "echo adios", "echo jeje"]
-    designated = random.randrange(0, len(commands))
+def MERKgetCommandValue(command,token):
     to_return = []
 
-    for letter in commands[designated]:
+    for letter in command:
         to_return.append(ord(letter) + int(token))
 
     return to_return
@@ -77,34 +75,44 @@ def MERKgetResultValue(string, token):
     return to_return
 
 
-def forMerkStateMachineClient(data):
+def MERKClient(data):
     global common_value
-    obj = ""
-    port = 4450
+    obj = data.split("->")[1].split(":")[0]
+    port = data.split(":")[1]
 
-    if "start" in data:
-        obj = data.split("start")[1].split(":")[0]
-        port = data.split(":")[1]
-        result = forMerkSendData("DH_1/" + str(MERKgenTimeFlag()[0]), obj, int(port)).decode()
-    if len(result) > 0:
-        if "DH_1" in result:
-            server_value = int(result.split("DH_1:")[1].split("/")[0]) - common_value
-            result = forMerkSendData(
-                "DH_2:" + str(int(server_value) + forMERKGetPrivateValue()) + "/" + str(MERKgenTimeFlag()[0]), obj,
-                int(port)).decode()
-        if "DH_2" in result:
-            time_slot_start = int(result.split("DH_2:")[1].split(",")[0]) - private_value
-            token = int(result.split(",")[1].split("/")[0]) - private_value
-            command_data = MERKgetCommandValue(token)
-            time.sleep(int(time_slot_start))
-            to_send = "PVT_1:"
-            for pos in command_data:
-                to_send += str(pos) + ","
-            to_send = to_send[:-1]
-            to_send += "/" + str(MERKgenTimeFlag()[0])
-            forMerkSendData(to_send, obj, int(port))
-        if "PVT_1" in data:
-            MERKgetResultValue(result.split("PVT_1:")[1].split("/")[0])
+    to_send = "DH_1"
+    response = ""
+    while "forMerkStateMachineClientEnds" not in to_send:
+        response = forMerkSendData(to_send, obj, port).decode()
+        if int(response.split("/")[1]) in MERKgenTimeFlag():
+            response=response.split("/")[0]
+            if len(response) > 0:
+                to_send = forMerkStateMachineClient(response)
+
+    return response
+    #result = forMerkSendData("DH_1/" + str(MERKgenTimeFlag()[0]), obj, int(port)).decode()
+
+
+def forMerkStateMachineClient(data):
+    global token
+    to_return = ""
+    if "DH_1" in data:
+        server_value = int(data.split("DH_1:")[1]) - common_value
+        to_return = ("DH_2:" + str(int(server_value) + forMERKGetPrivateValue()))
+    elif "DH_2" in data:
+        time_slot_start = int(data.split("DH_2:")[1].split(",")[0]) - private_value
+        token = int(data.split(",")[1]) - private_value
+        command_data = MERKgetCommandValue("echo jeje",token)
+        time.sleep(int(time_slot_start))
+        to_return = "PVT_1:"
+        for pos in command_data:
+            to_return += str(pos) + ","
+        to_return = to_return[:-1]
+        to_return += "/" + str(MERKgenTimeFlag()[0])
+    elif "PVT_1" in data:
+        to_return = "forMerkStateMachineClientEnds"+MERKgetResultValue(data.split("PVT_1:")[1].split(","),token)
+
+    return to_return
 
 
 def forMerkStateMachineServer(data):
@@ -151,7 +159,7 @@ def forMerk(argv):
         count = 0
         while count < max_count:
             count += 1
-            p2 = Process(target=forMerkStateMachineClient, args=("start" + obj + ":" + str(port) + ":" + str(port),))
+            p2 = Process(target=MERKClient, args=("data"+"->"+obj + ":" + str(port),))
             p2.start()
             time.sleep(random.randrange(30, 60))
         p1.kill()
@@ -160,12 +168,17 @@ def forMerk(argv):
 
 
 def forMerkSendData(data, obj, port):
-    print("Sending C->S :" + str(data) + " to " + str(obj) + ":" + str(port))
+    data_to_send = str(data) + "/" + str(MERKgenTimeFlag()[0])
+    data = ""
+    print("Sending C->S :" + str(data_to_send) + " to " + str(obj) + ":" + str(port))
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((obj, port))
-        s.sendall(bytes(data, 'utf-8'))
-        data = s.recv(1024)
-        s.close()
+        count = 0
+        while count < 3:
+            s.connect((obj, int(port)))
+            s.sendall(bytes(data_to_send, 'utf-8'))
+            data = s.recv(1024)
+            s.close()
+            count = 3
     return data
 
 
