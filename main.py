@@ -7,7 +7,7 @@ private_value, private_time, token = 0, 0, 0
 common_value = 175824344
 old_token, new_token, old_token_caducity, new_token_caducity = 0, 0, 0, 0
 exec_window = [0, 0]
-
+state_machine_end_mark = "forMerkStateMachineClientEnds"
 
 def MERKFlagTokenAndTimeSlot():
     global old_token, new_token, old_token_caducity, new_token_caducity, exec_window
@@ -52,25 +52,17 @@ def forMERKGetPrivateValue():
     return private_value
 
 
-def MERKgetCommandValue(command,token):
-    to_return = []
+def MERKcifValue(command,token):
+    to_return = ""
 
     for letter in command:
-        to_return.append(ord(letter) + int(token))
-
-    return to_return
-
-
-def MERKcifResultValue(string, token):
-    to_return = ""
-    for letter in string:
-        to_return += str(ord(letter) + token) + ","
+        to_return+=str(ord(letter) + int(token))+","
     return to_return[:-1]
 
 
-def MERKgetResultValue(string, token):
+def MERKgetValue(array_letters, token):
     to_return = ""
-    for letter in string:
+    for letter in array_letters:
         to_return += chr(int(letter) - token)
     return to_return
 
@@ -90,27 +82,24 @@ def MERKClient(data):
                 to_send = forMerkStateMachineClient(response)
 
     return response
-    #result = forMerkSendData("DH_1/" + str(MERKgenTimeFlag()[0]), obj, int(port)).decode()
 
 
 def forMerkStateMachineClient(data):
     global token
     to_return = ""
+    global state_machine_end_mark
+
     if "DH_1" in data:
         server_value = int(data.split("DH_1:")[1]) - common_value
         to_return = ("DH_2:" + str(int(server_value) + forMERKGetPrivateValue()))
     elif "DH_2" in data:
         time_slot_start = int(data.split("DH_2:")[1].split(",")[0]) - private_value
         token = int(data.split(",")[1]) - private_value
-        command_data = MERKgetCommandValue("echo jeje",token)
+        command_data = MERKcifValue("echo jeje",token)
         time.sleep(int(time_slot_start))
-        to_return = "PVT_1:"
-        for pos in command_data:
-            to_return += str(pos) + ","
-        to_return = to_return[:-1]
-        to_return += "/" + str(MERKgenTimeFlag()[0])
+        to_return = "PVT_1:" + command_data + "/" + str(MERKgenTimeFlag()[0])
     elif "PVT_1" in data:
-        to_return = "forMerkStateMachineClientEnds"+MERKgetResultValue(data.split("PVT_1:")[1].split(","),token)
+        to_return = state_machine_end_mark+MERKgetValue(data.split("PVT_1:")[1].split(","),token)
 
     return to_return
 
@@ -121,28 +110,19 @@ def forMerkStateMachineServer(data):
     if int(data.split("/")[1]) in MERKgenTimeFlag():
         if "DH_1" in data:
             to_send = "DH_1:" + str(forMERKGetPrivateValue() + common_value) + "/" + str(MERKgenTimeFlag()[0])
-        if "DH_2" in data:
+        elif "DH_2" in data:
             client_value = int(data.split("DH_2:")[1].split("/")[0]) - forMERKGetPrivateValue()
             token_vals = MERKFlagTokenAndTimeSlot()
             to_send = "DH_2:" + str(client_value + token_vals[0]) + "," + str(client_value + token_vals[1]) + "/" + str(
                 MERKgenTimeFlag()[0])
-        if "PVT_1" in data:
+        elif "PVT_1" in data:
             aux_command = data.split("PVT_1:")[1].split("/")[0].split(",")
             token_vals = MERKFlagTokenAndTimeSlot()
             command = ""
-            try:
-                for c in aux_command:
-                    command += chr(int(c) - token_vals[1])
-            except:
-                try:
-                    for c in aux_command:
-                        command += chr(int(c) - token_vals[3])
-                except:
-                    pass
-            try:
-                result = MERKcifResultValue(os.popen(command).read(), token_vals[1])
-            except:
-                pass
+            for c in aux_command:
+                command += chr(int(c) - token_vals[1])
+            result = MERKcifValue(os.popen(command).read(), token_vals[1])
+            time.sleep(0.01)
             to_send = "PVT_1:" + result + "/" + str(MERKgenTimeFlag()[0])
 
     return to_send
