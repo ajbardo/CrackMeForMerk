@@ -67,15 +67,15 @@ def MERKgetValue(array_letters, token):
     return to_return
 
 
-def MERKClient(data):
+def MERKClient(data,sender,forMerkStateMachineClient):
     global common_value
-    obj = data.split("->")[1].split(":")[0]
+    obj = data.split(":")[0]
     port = data.split(":")[1]
 
     to_send = "DH_1"
     response = ""
     while "forMerkStateMachineClientEnds" not in to_send:
-        response = forMerkSendData(to_send, obj, port).decode()
+        response = sender(to_send, obj, port).decode()
         if int(response.split("/")[1]) in MERKgenTimeFlag():
             response=response.split("/")[0]
             if len(response) > 0:
@@ -139,7 +139,7 @@ def forMerk(argv):
         count = 0
         while count < max_count:
             count += 1
-            p2 = Process(target=MERKClient, args=("data"+"->"+obj + ":" + str(port),))
+            p2 = Process(target=MERKClient, args=(obj + ":" + str(port),forMerkSendData,forMerkStateMachineClient))
             p2.start()
             time.sleep(random.randrange(30, 60))
         p1.kill()
