@@ -3,8 +3,12 @@ import time
 from multiprocessing import Process
 from datetime import datetime
 
-private_value, private_time, token = 0, 0, 0
-common_value = 175824344
+
+server_old_private_value, server_private_value, server_private_time = 0, 0, 0
+client_old_private_value, client_private_value, client_private_time = 0, 0, 0
+
+token  = 0
+common_value = 1758
 old_token, new_token, old_token_caducity, new_token_caducity = 0, 0, 0, 0
 exec_window = [0, 0]
 state_machine_end_mark = "forMerkStateMachineClientEnds"
@@ -38,18 +42,36 @@ def MERKgenTimeFlag():
     val6 = int(dt_string[5])
 
     to_return = (val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - val6) ^ 2
-    return to_return,
+    to_return2 = (val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - (val6 - 1)) ^ 2
+    return to_return,to_return2
 
 
-def forMERKGetPrivateValue():
-    global private_time
-    global private_value
+def forMERKGetServerPrivateValue():
+    global server_private_time
+    global server_private_value
+    global server_old_private_value
     time_data = datetime.now().strftime("%M/%S").split("/")
     new_server_time = (int(time_data[0]) * 100) + int(time_data[1])
-    if new_server_time > private_time:
-        private_time = new_server_time + random.randrange(2, 5)
-        private_value = random.randrange(0, 999999999)
-    return private_value
+    if new_server_time > server_private_time:
+        server_old_private_value = server_private_value
+        server_private_time = new_server_time + random.randrange(3, 5)
+        server_private_value = random.randrange(0, 9999)
+
+    return server_private_value
+
+
+def forMERKGetClientPrivateValue():
+    global client_private_time
+    global client_private_value
+    global client_old_private_value
+    time_data = datetime.now().strftime("%M/%S").split("/")
+    new_server_time = (int(time_data[0]) * 100) + int(time_data[1])
+    if new_server_time > client_private_time:
+        client_old_private_value = client_private_value
+        client_private_time = new_server_time + random.randrange(3, 5)
+        client_private_value = random.randrange(0, 9999)
+
+    return client_private_value
 
 
 def MERKcifValue(command,token):
@@ -75,12 +97,15 @@ def MERKClient(data,sender,forMerkStateMachineClient):
     to_send = "DH_1"
     response = ""
     while "forMerkStateMachineClientEnds" not in to_send:
-        response = sender(to_send, obj, port).decode()
-        if int(response.split("/")[1]) in MERKgenTimeFlag():
-            response=response.split("/")[0]
-            if len(response) > 0:
-                to_send = forMerkStateMachineClient(response)
-
+        response = sender(to_send, obj, int(port)).decode()
+        if len(response) > 0:
+            if "/" in response:
+                if int(response.split("/")[1]) in MERKgenTimeFlag():
+                    response=response.split("/")[0]
+                    if len(response) > 0:
+                        to_send = forMerkStateMachineClient(response)
+        else:
+            to_send = "forMerkStateMachineClientEnds"
     return response
 
 
@@ -91,10 +116,10 @@ def forMerkStateMachineClient(data):
 
     if "DH_1" in data:
         server_value = int(data.split("DH_1:")[1]) - common_value
-        to_return = ("DH_2:" + str(int(server_value) + forMERKGetPrivateValue()))
+        to_return = ("DH_2:" + str(int(server_value) + forMERKGetClientPrivateValue()))
     elif "DH_2" in data:
-        time_slot_start = int(data.split("DH_2:")[1].split(",")[0]) - private_value
-        token = int(data.split(",")[1]) - private_value
+        time_slot_start = int(data.split("DH_2:")[1].split(",")[0]) - client_private_value
+        token = int(data.split(",")[1]) - client_private_value
         command_data = MERKcifValue("echo jeje",token)
         time.sleep(int(time_slot_start))
         to_return = "PVT_1:" + command_data + "/" + str(MERKgenTimeFlag()[0])
@@ -104,47 +129,32 @@ def forMerkStateMachineClient(data):
     return to_return
 
 
-def forMerkStateMachineServer(data):
+def forMerkStateMachineServer(data,priv_value,token_vals):
     global server_values
     to_send = ""
-    if int(data.split("/")[1]) in MERKgenTimeFlag():
+    time_flags = MERKgenTimeFlag()
+    if int(data.split("/")[1]) in time_flags:
         if "DH_1" in data:
-            to_send = "DH_1:" + str(forMERKGetPrivateValue() + common_value) + "/" + str(MERKgenTimeFlag()[0])
+            to_send = "DH_1:" + str(priv_value + common_value) + "/" + str(MERKgenTimeFlag()[0])
         elif "DH_2" in data:
-            client_value = int(data.split("DH_2:")[1].split("/")[0]) - forMERKGetPrivateValue()
-            token_vals = MERKFlagTokenAndTimeSlot()
+            client_value = int(data.split("DH_2:")[1].split("/")[0]) - priv_value
             to_send = "DH_2:" + str(client_value + token_vals[0]) + "," + str(client_value + token_vals[1]) + "/" + str(
                 MERKgenTimeFlag()[0])
         elif "PVT_1" in data:
             aux_command = data.split("PVT_1:")[1].split("/")[0].split(",")
-            token_vals = MERKFlagTokenAndTimeSlot()
             command = ""
-            for c in aux_command:
-                command += chr(int(c) - token_vals[1])
+            try:
+                for c in aux_command:
+                    command += chr(int(c) - token_vals[1])
+            except:
+                command = ""
+                for c in aux_command:
+                    command += chr(int(c) - token_vals[3])
+
             result = MERKcifValue(os.popen(command).read(), token_vals[1])
-            time.sleep(0.01)
+            time.sleep(0.004)
             to_send = "PVT_1:" + result + "/" + str(MERKgenTimeFlag()[0])
-
     return to_send
-
-
-def forMerk(argv):
-    max_count = 1000
-    if len(argv) > 0:
-        obj = argv[0]
-        port = int(argv[1])
-        print("starting server in port: " + str(port))
-        p1 = Process(target=forMerkServerMaybe, args=(port,))
-        p1.start()
-        count = 0
-        while count < max_count:
-            count += 1
-            p2 = Process(target=MERKClient, args=(obj + ":" + str(port),forMerkSendData,forMerkStateMachineClient))
-            p2.start()
-            time.sleep(random.randrange(30, 60))
-        p1.kill()
-    else:
-        forMerkServerMaybe(4450)
 
 
 def forMerkSendData(data, obj, port):
@@ -162,26 +172,74 @@ def forMerkSendData(data, obj, port):
     return data
 
 
-def forMerkServerMaybe(port):
+def forMerkServerMaybe(port,cicles):
     HOST = ''  # Symbolic name meaning all available interfaces
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, port))
         s.listen(100)
-        while True:
+        count = 0
+        while count < cicles*4:
+            count += 1
             conn, addr = s.accept()
-            old_len = -1
-            data = ""
+            priv_value = forMERKGetServerPrivateValue()
+            token_vals = MERKFlagTokenAndTimeSlot()
+            p2 = Process(target=slaveServer, args=(conn, addr ,priv_value,token_vals))
+            p2.start()
+
+
+def slaveServer(conn, addr,priv_value,token_vals):
+    old_len = -1
+    data = ""
+    while len(data) > old_len:
+        data = conn.recv(1024)
+        old_len = len(data)
+    to_send = forMerkStateMachineServer(data.decode(),priv_value,token_vals)
+    conn.send(bytes(to_send, 'utf-8'))
+    print("Sending S->C :" + str(to_send) + " to " + str(addr))
+    time.sleep(0.04)
+    conn.close()
+
+
+def main(argv):
+    obj = "127.0.0.1"
+    port = 4450
+    cicles = 1
+    delay = 10
+    for arg in argv:
+        if arg.split(":")[0] == "ip":
             try:
-                while len(data) > old_len:
-                    data = conn.recv(1024)
-                    old_len = len(data)
-                data = forMerkStateMachineServer(data.decode())
-                conn.send(bytes(data, 'utf-8'))
-                print("Sending S->C :" + str(data) + " to " + str(addr) + ":" + str(port))
-                time.sleep(0.002)
-                conn.close()
+                obj = arg.split(":")[1]
+            except:
+                pass
+        elif arg.split(":")[0] == "port":
+            try:
+                port = int(arg.split(":")[1])
+            except:
+                pass
+        elif arg.split(":")[0] == "cicles":
+            try:
+                cicles = int(arg.split(":")[1])
+            except:
+                pass
+        elif arg.split(":")[0] == "delay":
+            try:
+                delay = int(arg.split(":")[1])
             except:
                 pass
 
+    p1 = Process(target=forMerkServerMaybe, args=(port,cicles,))
+    p1.start()
+    count = 0
+    while count < cicles:
+        count += 1
+        p2 = Process(target=MERKClient, args=(obj + ":" + str(port), forMerkSendData, forMerkStateMachineClient))
+        #p2.start()
+        MERKClient(obj + ":" + str(port), forMerkSendData, forMerkStateMachineClient)
+        time.sleep(delay)
+    p1.kill()
+    return obj,str(port),str(cicles),str(delay)
+
 if __name__ == '__main__':
-    forMerk(sys.argv[1:])
+    main(sys.argv[1:])
+
+
