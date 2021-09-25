@@ -4,7 +4,7 @@
 2. requirements and characteristics:
 	* 2.1 Requirements
 	* 2.2 Execution and configuration
-	** 2.2.1 Configuration values
+		* 2.2.1 Configuration values
 	* 2.3 Environment
 3. Connection characteristics
 4. Protocol phases
