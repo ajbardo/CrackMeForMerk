@@ -26,17 +26,72 @@ R02 The protocol is split in phases with independent connections between them
 R03 The client and server have a pre-shared value the is represented as  “CommonValue”                                                                      
 R04 The client and the server generates random privates values with timelife and they refresh that values when the lifetime ends                           
 
-## 2.2 Execution characteristics
-There are two ways to execute the .py file:                                                                                                                    
-1)Without arguments, the program will create only a server in the default port 4450                                                                          
-2)With the ip and port argument, the program will create a server in the specified port and tries to communicate with the specified address at the same port (Can be used with local-host to connect with itself)
+## 2.2 Execution and configuration
+The normal execution of the software is done by the command : "python main.py" or "python3 main.py" depending of your environment configuration
+The execution with the command admits arguments in order to change the behaviour of the software.
+The arguments needs to be separated by a blank space and composed of a specific identificator before the asigment character ":" and the new value
+In case of one or more missing configuration arguments in the command, the software will use the default values specified below.
 
+### 2.2.1 Configuration values
+#### Objective
+The ip that represents the server                                        
+Default value: "127.0.0.1"                                  
+Identification for the argument: ip  
+
+Example or argument:                                                 
+* ip:127.0.0.1                                                         
+* ip:192.168.0.1  
+                                       
+Example of command:                                          
+* python main.py ip:127.0.0.1                                   
+* python main.py ip:192.168.0.1                                         
+
+#### Port
+The port that will be used for the communication, has to match in the server and client
+Default value: 4450
+Identification for the argument: port
+
+Example or argument:                                                 
+* port:4450                                                         
+* port:5000  
+                                       
+Example of command:                                          
+* python main.py port:4450                                   
+* python main.py port:5000    
+
+#### cicles
+Number of example connections between the client and the server.
+Limiting both parts, the amount of sequential connections from a client to a server and the amount of connections that a server will serve.
+
+Default value: 1
+Identification for the argument: cicles
+
+Example or argument:                                                 
+* cicles:1                                                         
+* cicles:15  
+                                       
+Example of command:                                          
+* python main.py cicles:1                                   
+* python main.py cicles:15   
+
+#### delay
+DEtermines the delay in seconds between sequential connections in the clients
+Default value: 10
+Identification for the argument: delay
+
+Example or argument:                                                 
+* delay:10                                                         
+* delay:105  
+                                       
+Example of command:                                          
+* python main.py delay:10                                   
+* python main.py delay:105 
 
 ## 2.3 Environment
 Executed with Python 3.8
 Executed in windows environments
 
-#3 Connection characteristics
+# 3 Connection characteristics
 C01 For each Client to Server connection, we have a data send from the client with the request and a response from the server with the data related to the request.
 C02 After each server to client response each connection close.
 C03 Each message between the client and the server is authenticated by a TimeFlag.
@@ -45,16 +100,16 @@ C03 Each message between the client and the server is authenticated by a TimeFla
 In each phase the client opens a new connection with the server and in the end of the phase the connection is closed
 
 ## 4.1 Protocol characteristics:
-4.1C01- There is always an identification header for each phase
-4.1C02- The TimeFlag has always the reserved value “/” before
-4.1C03- If we are sending data, after the identification header we have “:” and the data that we want to transfer
-4.1C04- The TimeFlag mandatory in all the messages
+4.1C01- There is always an identification header for each phase                                                                            
+4.1C02- The TimeFlag has always the reserved value “/” before                                                                               
+4.1C03- If we are sending data, after the identification header we have “:” and the data that we want to transfer                                            
+4.1C04- The TimeFlag mandatory in all the messages                                                                                        
 
 ### 4.1.2 Characteristics of the execution windows
-4.1.2C01 Each window has a defined randomized token
-4.1.2C02 The windows are sequential one after another
-4.1.2C03 The lifetime of each window is defined by a random integer in the magnitude of seconds
-4.1.2C04 The server always send to the client the next operative window but only the starting moment
+4.1.2C01 Each window has a defined randomized token                                                                                               
+4.1.2C02 The windows are sequential one after another                                                                       
+4.1.2C03 The lifetime of each window is defined by a random integer in the magnitude of seconds                                               
+4.1.2C04 The server always send to the client the next operative window but only the starting moment                                           
 
 
 ## 4.2 Phases
