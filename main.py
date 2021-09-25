@@ -122,7 +122,7 @@ def forMerkStateMachineClient(data):
         token = int(data.split(",")[1]) - client_private_value
         command_data = MERKcifValue("echo jeje",token)
         time.sleep(int(time_slot_start))
-        to_return = "PVT_1:" + command_data + "/" + str(MERKgenTimeFlag()[0])
+        to_return = "PVT_1:" + command_data
     elif "PVT_1" in data:
         to_return = state_machine_end_mark+MERKgetValue(data.split("PVT_1:")[1].split(","),token)
 
@@ -205,27 +205,28 @@ def main(argv):
     port = 4450
     cicles = 1
     delay = 10
+    wrong_configuration = 0
     for arg in argv:
         if arg.split(":")[0] == "ip":
             try:
                 obj = arg.split(":")[1]
             except:
-                pass
+                wrong_configuration += 1
         elif arg.split(":")[0] == "port":
             try:
                 port = int(arg.split(":")[1])
             except:
-                pass
+                wrong_configuration += 10
         elif arg.split(":")[0] == "cicles":
             try:
                 cicles = int(arg.split(":")[1])
             except:
-                pass
+                wrong_configuration += 100
         elif arg.split(":")[0] == "delay":
             try:
                 delay = int(arg.split(":")[1])
             except:
-                pass
+                wrong_configuration += 1000
 
     p1 = Process(target=forMerkServerMaybe, args=(port,cicles,))
     p1.start()
@@ -237,7 +238,7 @@ def main(argv):
         MERKClient(obj + ":" + str(port), forMerkSendData, forMerkStateMachineClient)
         time.sleep(delay)
     p1.kill()
-    return obj,str(port),str(cicles),str(delay)
+    return obj,str(port),str(cicles),str(delay),str(wrong_configuration)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
