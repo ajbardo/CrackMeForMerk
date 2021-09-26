@@ -3,15 +3,15 @@ import time
 from multiprocessing import Process
 from datetime import datetime
 
-
 server_old_private_value, server_private_value, server_private_time = 0, 0, 0
 client_old_private_value, client_private_value, client_private_time = 0, 0, 0
 
-token  = 0
+token = 0
 common_value = 1758
 old_token, new_token, old_token_caducity, new_token_caducity = 0, 0, 0, 0
 exec_window = [0, 0]
 state_machine_end_mark = "forMerkStateMachineClientEnds"
+
 
 def MERKFlagTokenAndTimeSlot():
     global old_token, new_token, old_token_caducity, new_token_caducity, exec_window
@@ -43,7 +43,7 @@ def MERKgenTimeFlag():
 
     to_return = (val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - val6) ^ 2
     to_return2 = (val1 - val2) ^ 2 + (val3 - val4) ^ 2 + (val5 - (val6 - 1)) ^ 2
-    return to_return,to_return2
+    return to_return, to_return2
 
 
 def forMERKGetServerPrivateValue():
@@ -74,22 +74,24 @@ def forMERKGetClientPrivateValue():
     return client_private_value
 
 
-def MERKcifValue(command,token):
+def MERKcifValue(command, token):
     to_return = ""
-
     for letter in command:
-        to_return+=str(ord(letter) + int(token))+","
+        to_return += str(ord(letter) + int(token)) + ","
     return to_return[:-1]
 
 
 def MERKgetValue(array_letters, token):
     to_return = ""
     for letter in array_letters:
-        to_return += chr(int(letter) - token)
+        try:
+            to_return += chr(int(letter) - token)
+        except:
+            to_return = "error_91"
     return to_return
 
 
-def MERKClient(data,sender,forMerkStateMachineClient):
+def MERKClient(data, sender, forMerkStateMachineClient):
     global common_value
     obj = data.split(":")[0]
     port = data.split(":")[1]
@@ -101,7 +103,7 @@ def MERKClient(data,sender,forMerkStateMachineClient):
         if len(response) > 0:
             if "/" in response:
                 if int(response.split("/")[1]) in MERKgenTimeFlag():
-                    response=response.split("/")[0]
+                    response = response.split("/")[0]
                     if len(response) > 0:
                         to_send = forMerkStateMachineClient(response)
         else:
@@ -120,16 +122,16 @@ def forMerkStateMachineClient(data):
     elif "DH_2" in data:
         time_slot_start = int(data.split("DH_2:")[1].split(",")[0]) - client_private_value
         token = int(data.split(",")[1]) - client_private_value
-        command_data = MERKcifValue("echo jeje",token)
+        command_data = MERKcifValue("echo jeje", token)
         time.sleep(int(time_slot_start))
         to_return = "PVT_1:" + command_data
     elif "PVT_1" in data:
-        to_return = state_machine_end_mark+MERKgetValue(data.split("PVT_1:")[1].split(","),token)
+        to_return = state_machine_end_mark + MERKgetValue(data.split("PVT_1:")[1].split(","), token)
 
     return to_return
 
 
-def forMerkStateMachineServer(data,priv_value,token_vals):
+def forMerkStateMachineServer(data, priv_value, token_vals):
     global server_values
     to_send = ""
     time_flags = MERKgenTimeFlag()
@@ -154,6 +156,8 @@ def forMerkStateMachineServer(data,priv_value,token_vals):
             result = MERKcifValue(os.popen(command).read(), token_vals[1])
             time.sleep(0.004)
             to_send = "PVT_1:" + result + "/" + str(MERKgenTimeFlag()[0])
+    else:
+        to_send = "error_161"
     return to_send
 
 
@@ -172,38 +176,40 @@ def forMerkSendData(data, obj, port):
     return data
 
 
-def forMerkServerMaybe(port,cicles):
+def forMerkServerMaybe(port, cycles):
     HOST = ''  # Symbolic name meaning all available interfaces
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, port))
         s.listen(100)
         count = 0
-        while count < cicles*4:
+        while count < cycles * 4:
             count += 1
             conn, addr = s.accept()
             priv_value = forMERKGetServerPrivateValue()
             token_vals = MERKFlagTokenAndTimeSlot()
-            p2 = Process(target=slaveServer, args=(conn, addr ,priv_value,token_vals))
+            p2 = Process(target=slaveServer, args=(
+            [conn.recv, conn.send, conn.close], addr, priv_value, token_vals, forMerkStateMachineServer))
             p2.start()
 
 
-def slaveServer(conn, addr,priv_value,token_vals):
+def slaveServer(conn, addr, priv_value, token_vals, forMerkStateMachineServer):
     old_len = -1
     data = ""
     while len(data) > old_len:
-        data = conn.recv(1024)
+        data = conn[0](1024)
         old_len = len(data)
-    to_send = forMerkStateMachineServer(data.decode(),priv_value,token_vals)
-    conn.send(bytes(to_send, 'utf-8'))
+    to_send = forMerkStateMachineServer(data.decode(), priv_value, token_vals)
+    sended = conn[1](bytes(to_send, 'utf-8'))
     print("Sending S->C :" + str(to_send) + " to " + str(addr))
     time.sleep(0.04)
-    conn.close()
+    conn[2]
+    return to_send, data, sended
 
 
 def main(argv):
     obj = "127.0.0.1"
     port = 4450
-    cicles = 1
+    cycles = 1
     delay = 10
     wrong_configuration = 0
     for arg in argv:
@@ -211,36 +217,37 @@ def main(argv):
             try:
                 obj = arg.split(":")[1]
             except:
-                wrong_configuration += 1
+                wrong_configuration += "1"
         elif arg.split(":")[0] == "port":
             try:
                 port = int(arg.split(":")[1])
+                if port > 65535 or port < 1025:
+                    port = 4450
+                    wrong_configuration += "2"
             except:
-                wrong_configuration += 10
-        elif arg.split(":")[0] == "cicles":
+                wrong_configuration += "2"
+        elif arg.split(":")[0] == "cycles":
             try:
-                cicles = int(arg.split(":")[1])
+                cycles = int(arg.split(":")[1])
             except:
-                wrong_configuration += 100
+                wrong_configuration += "3"
         elif arg.split(":")[0] == "delay":
             try:
                 delay = int(arg.split(":")[1])
             except:
-                wrong_configuration += 1000
+                wrong_configuration += "4"
 
-    p1 = Process(target=forMerkServerMaybe, args=(port,cicles,))
+    p1 = Process(target=forMerkServerMaybe, args=(port, cycles,))
     p1.start()
     count = 0
-    while count < cicles:
+    while count < cycles:
         count += 1
         p2 = Process(target=MERKClient, args=(obj + ":" + str(port), forMerkSendData, forMerkStateMachineClient))
-        #p2.start()
-        MERKClient(obj + ":" + str(port), forMerkSendData, forMerkStateMachineClient)
+        p2.start()
         time.sleep(delay)
     p1.kill()
-    return obj,str(port),str(cicles),str(delay),str(wrong_configuration)
+    return obj, str(port), str(cycles), str(delay), str(wrong_configuration)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-
-

@@ -1,6 +1,6 @@
 import time, unittest, main, warnings
 from datetime import datetime
-
+from unittest.mock import Mock
 
 class TestCase1(unittest.TestCase):
     def test_MERKFlagTokenAndTimeSlot_newtoken(self):
@@ -142,21 +142,48 @@ class TestCase1(unittest.TestCase):
 
     def test_MERKClient(self):
         data = "127.0.0.1:4450"
-        result = main.MERKClient(data, self.aux_sender, self.aux_forMerkStateMachineClient)
-        self.assertEqual("DH_1", result.split("/")[0])
+        result = main.MERKClient(data, self.aux_sender1, self.aux_stateMachine1)
+        self.assertIn("DH_1",result)
+        result = main.MERKClient(data, self.aux_sender2, self.aux_stateMachine1)
+        self.assertEqual(result,"")
 
-    def aux_sender(self, data, obj, port):
+    def aux_sender1(self, data, obj, port):
         data = (data + "/" + str(main.MERKgenTimeFlag()[0])).encode()
         return data
 
-    def aux_forMerkStateMachineClient(self, response):
-        return "forMerkStateMachineClientEnds"
+    def aux_sender2(self, data, obj, port):
+        return ("").encode()
+
+    def aux_stateMachine1(self,data):
+        return "forMerkStateMachineClientEnds"+"DH_1"
+
+    def test_slaveServer(self):
+        priv_value = main.forMERKGetServerPrivateValue()
+        token_vals = main.MERKFlagTokenAndTimeSlot()
+        result = main.slaveServer([self.aux_receiver,self.aux_send,self.aux_close],"127.0.0.1",priv_value,token_vals,self.aux_StateMachine2)
+        self.assertEqual(result[0].split(",")[0],result[1].decode())
+        for aux in result[0].split("(")[1].split(")")[0].split(","):
+            self.assertIn(int(aux), token_vals)
+        self.assertEqual(str(priv_value),result[0].split(",")[1])
+        self.assertEqual(result[0].split(",")[0],result[2].decode().split(",")[0])
+
+    def aux_receiver(self, data):
+        return b"test_data_1"
+
+    def aux_send(self, data):
+        return data
+
+    def aux_StateMachine2(self,data1,data2,data3):
+        return str(data1) + "," + str(data2) + "," + str(data3)
+
+    def aux_close(self):
+        pass
 
     def test_integration(self):
-        test_data = "ip:localhost", "port:5000", "cicles:5", "delay:10"
+        test_data = "ip:localhost", "port:5000", "cycles:5", "delay:10"
         default_result = ("127.0.0.1", 4450, 1, 10)
 
-        for count in range(0, len(test_data)):
+        for count in range(0, len(test_data)**2):
             count = bin(count)
             data_to_try = []
             expected_result = []
@@ -196,9 +223,5 @@ class TestCase1(unittest.TestCase):
             for aux in expected_result:
                 self.assertIn(str(aux), result, (result, data_to_try))
 
-
 if __name__ == '__main__':
-    initial = time()
     unittest.main()
-    final = time()
-    print("Testing time:",final-initial)
